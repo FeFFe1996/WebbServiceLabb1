@@ -27,12 +27,8 @@
                 Message
                 <input th:field="*{message}" type="text">
                 <span th:if="${#fields.hasErrors('message')}" th:errors="*{message}"></span>
+                <input th:field="*{sessionId}" type="hidden">
             </label><br>
-            <span th:if="*{#fields.hasErrors('message')}" th:errors="*{message}"></span>
-            <label for="sessionId">
-                SessionId
-            </label>
-            <input th:field="*{sessionId}" type="text" id="sessionId"><br>
             <input type="submit" value="submit">
         </form>
     </main>

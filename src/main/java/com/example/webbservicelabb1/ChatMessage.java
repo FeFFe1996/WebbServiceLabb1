@@ -1,5 +1,5 @@
 package com.example.webbservicelabb1;
 
-public record ChatMessage(Long sessionId,String message) {
+public record ChatMessage(String sessionId, String message) {
 
 }

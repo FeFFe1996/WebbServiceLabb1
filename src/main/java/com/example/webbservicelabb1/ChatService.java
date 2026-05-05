@@ -2,15 +2,16 @@ package com.example.webbservicelabb1;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ApiVersionInserter;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import tools.jackson.databind.ObjectMapper;
 
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
 
 @Service
 public class ChatService {
@@ -25,6 +26,7 @@ public class ChatService {
                 .defaultHeader("Authorization", "Bearer " + apiKey)
                 .defaultHeader("HTTP-Referer", "https://myapp.example")
                 .defaultHeader("X-Title", "WebbServiceLabb1")
+                .defaultHeader("Content-Type", "application/json")
                 .build();
     }
 
@@ -33,16 +35,25 @@ public class ChatService {
     }
 
     public void sendMsg(@Valid ChatRequest request) {
-        ChatMessage chatMsg = new ChatMessage(request.getSessionId(), request.getMessage());
-        chatMessages.add(chatMsg);
-
-        chatMessages.add(post(request));
+        ChatMessage userMsg = new ChatMessage(request.getSessionId(), request.getMessage());
+        ChatMessage replyMsg = post(request);
+        chatMessages.add(userMsg);
+        chatMessages.add(replyMsg);
     }
 
-    public ChatMessage post(ChatRequest request){
-        return restClient.post().uri("chat/completions")
-                .body(request)
-                .retrieve()
-                .body(ChatMessage.class);
+    public ChatMessage post(ChatRequest request) {
+        try {
+            ObjectMapper objMapper = new ObjectMapper();
+
+            String json = objMapper.writeValueAsString(request);
+            var response = restClient.post()
+                    .uri("chat/completions")
+                    .body(json)
+                    .retrieve()
+                    .body(ChatMessage.class);
+            return new ChatMessage(response.sessionId(), request.getMessage());
+        } catch (RestClientException e) {
+            throw new RuntimeException("Failed to post message to AI service", e);
+        }
     }
 }

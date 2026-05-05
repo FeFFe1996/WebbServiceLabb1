@@ -1,14 +1,16 @@
 package com.example.webbservicelabb1;
 
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 public class ChatRequest {
     private String personality;
 
     @NotNull
+    @NotEmpty
     private String message;
 
-    private Long SessionId;
+    private String SessionId;
 
     public String getPersonality() {
         return personality;
@@ -26,11 +28,11 @@ public class ChatRequest {
         this.message = message;
     }
 
-    public Long getSessionId() {
+    public String getSessionId() {
         return SessionId;
     }
 
-    public void setSessionId(Long sessionId) {
+    public void setSessionId(String sessionId) {
         SessionId = sessionId;
     }
 }
