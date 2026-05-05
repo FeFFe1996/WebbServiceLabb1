@@ -43,12 +43,10 @@ public class ChatService {
 
     public ChatMessage post(ChatRequest request) {
         try {
-            ObjectMapper objMapper = new ObjectMapper();
 
-            String json = objMapper.writeValueAsString(request);
             var response = restClient.post()
                     .uri("chat/completions")
-                    .body(json)
+                    .body(request)
                     .retrieve()
                     .body(ChatMessage.class);
             return new ChatMessage(response.sessionId(), request.getMessage());
