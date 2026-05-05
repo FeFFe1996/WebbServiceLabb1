@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <header>
+        <h1>form page</h1>
+    </header>
+    <main>
+        <h2>call AI chat</h2>
+        <div th:each="msg : ${chatMessages}">
+            <p th:text="chatMessages.Message"></p>
+        </div>
+
+<!--        <form th:action="@{/api/v1/chat}" th:object="${formRequest}" method="POST">-->
+<!--            <label>-->
+<!--                Personality-->
+<!--                <select th:field="*{personality}"  name="personality">-->
+<!--                    <option value="chatbot">chatbot</option>-->
+<!--                    <option value="pirate">pirate</option>-->
+<!--                    <option value="salesman">salesman</option>-->
+<!--                </select>-->
+<!--            </label><br>-->
+<!--            <label>-->
+<!--                Message-->
+<!--                <input th:field="*{message}" type="text">-->
+<!--            </label><br>-->
+<!--            <span th:if="*{#fields.hasErrors('message')}" th:errors="*{message}"></span>-->
+<!--            <label for="sessionId">-->
+<!--                SessionId-->
+<!--            </label>-->
+<!--            <input th:field="*{sessionId}" type="text" id="sessionId"><br>-->
+<!--            <input type="submit" value="submit">-->
+<!--        </form>-->
+    </main>
+</body>
+</html>
