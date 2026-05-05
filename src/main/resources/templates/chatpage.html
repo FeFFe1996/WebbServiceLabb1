@@ -26,6 +26,7 @@
             <label>
                 Message
                 <input th:field="*{message}" type="text">
+                <span th:if="${#fields.hasErrors('message')}" th:errors="*{message}"></span>
             </label><br>
             <span th:if="*{#fields.hasErrors('message')}" th:errors="*{message}"></span>
             <label for="sessionId">

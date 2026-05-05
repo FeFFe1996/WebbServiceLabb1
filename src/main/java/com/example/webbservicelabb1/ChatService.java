@@ -1,5 +1,6 @@
 package com.example.webbservicelabb1;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -29,5 +30,19 @@ public class ChatService {
 
     public List<ChatMessage> sessionMessages() {
         return chatMessages;
+    }
+
+    public void sendMsg(@Valid ChatRequest request) {
+        ChatMessage chatMsg = new ChatMessage(request.getSessionId(), request.getMessage());
+        chatMessages.add(chatMsg);
+
+        chatMessages.add(post(request));
+    }
+
+    public ChatMessage post(ChatRequest request){
+        return restClient.post().uri("chat/completions")
+                .body(request)
+                .retrieve()
+                .body(ChatMessage.class);
     }
 }
