@@ -1,6 +1,5 @@
 package com.example.webbservicelabb1;
 
-public class ChatMessage {
+public record ChatMessage(String message) {
 
-    private String message;
 }

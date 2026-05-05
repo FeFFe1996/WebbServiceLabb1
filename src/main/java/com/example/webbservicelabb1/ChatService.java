@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.ApiVersionInserter;
 import org.springframework.web.client.RestClient;
 
-import java.awt.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
 public class ChatService {
 
     private final RestClient restClient;
-    private List<ChatMessage> chatMessages;
+    private List<ChatMessage> chatMessages = new ArrayList<>();
 
     public ChatService(RestClient.Builder restClientBuilder, @Value("${API_KEY}") String apiKey) {
         this.restClient = restClientBuilder
@@ -27,11 +27,7 @@ public class ChatService {
                 .build();
     }
 
-    public record ChatResponse(List<Choice> choices){}
-
     public List<ChatMessage> sessionMessages() {
-        if (chatMessages.isEmpty())
-            chatMessages = new ArrayList<>();
         return chatMessages;
     }
 }
