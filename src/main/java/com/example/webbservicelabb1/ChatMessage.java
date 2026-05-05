@@ -1,6 +1,6 @@
 package com.example.webbservicelabb1;
 
-public class ChatHistory {
+public class ChatMessage {
 
     private String message;
 }
