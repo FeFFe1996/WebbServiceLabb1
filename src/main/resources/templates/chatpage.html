@@ -17,17 +17,17 @@
         <form th:action="@{/api/v1/chat}" th:object="${formRequest}" method="POST">
             <label>
                 Personality
-                <select th:field="*{personality}"  name="personality">
-                    <option value="chatbot">chatbot</option>
-                    <option value="pirate">pirate</option>
-                    <option value="salesman">salesman</option>
-                </select>
+<!--                <select th:field="*{personality}"  name="personality">-->
+<!--                    <option value="chatbot">chatbot</option>-->
+<!--                    <option value="pirate">pirate</option>-->
+<!--                    <option value="salesman">salesman</option>-->
+<!--                </select>-->
             </label><br>
             <label>
                 Message
-                <input th:field="*{message}" type="text">
-                <span th:if="${#fields.hasErrors('message')}" th:errors="*{message}"></span>
-                <input th:field="*{sessionId}" type="hidden">
+                <input th:field="*{content}" type="text">
+                <span th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></span>
+                <!-- <input th:field="*{sessionId}" type="hidden"> -->
             </label><br>
             <input type="submit" value="submit">
         </form>

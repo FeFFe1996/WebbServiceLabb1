@@ -1,13 +1,9 @@
 package com.example.webbservicelabb1;
 
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
-import tools.jackson.databind.ObjectMapper;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,41 +13,53 @@ import java.util.List;
 public class ChatService {
 
     private final RestClient restClient;
-    private List<ChatMessage> chatMessages = new ArrayList<>();
+    private final List<ChatMessage> chatMessages = new ArrayList<>();
 
-    public ChatService(RestClient.Builder restClientBuilder, @Value("${API_KEY}") String apiKey) {
-        this.restClient = restClientBuilder
-                .clone() // Creates a safe, independent copy of the builder
-                .baseUrl("https://openrouter.ai/api/v1")
-                .defaultHeader("Authorization", "Bearer " + apiKey)
-                .defaultHeader("HTTP-Referer", "https://myapp.example")
-                .defaultHeader("X-Title", "WebbServiceLabb1")
-                .defaultHeader("Content-Type", "application/json")
-                .build();
+    public ChatService(RestClient restClient) {
+        this.restClient = restClient;
     }
 
-    public List<ChatMessage> sessionMessages() {
+   public List<ChatMessage> allMessages(){
         return chatMessages;
-    }
+   }
 
-    public void sendMsg(@Valid ChatRequest request) {
-        ChatMessage userMsg = new ChatMessage(request.getSessionId(), request.getMessage());
-        ChatMessage replyMsg = post(request);
-        chatMessages.add(userMsg);
-        chatMessages.add(replyMsg);
-    }
+   public String sendMessage(FormRequest formRequest){
+        ChatMessage message = new ChatMessage("user", formRequest.getContent());
+        ChatRequest request = new ChatRequest("meta-llama/llama-3.3-70b-instruct:free", List.of(message));
+       int maxRetries = 3;
+       int waitTimeMs = 2000;
 
-    public ChatMessage post(ChatRequest request) {
-        try {
+       for (int i = 0; i < maxRetries; i++) {
+           try {
+               var response = getResponse(request);
+               return response.choiceList().getFirst().message().content();
+           } catch (RuntimeException e) {
+               // Check if it's a 429 error and we have retries left
+               if (e.getMessage().contains("429") && i < maxRetries - 1) {
+                   try {
+                       Thread.sleep(waitTimeMs);
+                   } catch (InterruptedException ie) {
+                       Thread.currentThread().interrupt();
+                   }
+                   waitTimeMs *= 2;
+               } else {
+                   throw e;
+               }
+           }
+       }
+       throw new RuntimeException("Failed to get response after multiple retries due to rate limits.");
+   }
 
-            var response = restClient.post()
-                    .uri("chat/completions")
-                    .body(request)
-                    .retrieve()
-                    .body(ChatMessage.class);
-            return new ChatMessage(response.sessionId(), request.getMessage());
-        } catch (RestClientException e) {
-            throw new RuntimeException("Failed to post message to AI service", e);
-        }
-    }
+
+   public ChatResponse getResponse(ChatRequest chatRequest){
+       return restClient.post()
+               .uri("chat/completions")
+               .contentType(MediaType.APPLICATION_JSON)
+               .body(chatRequest)
+               .retrieve()
+               .onStatus(HttpStatusCode::isError, (req, res) -> {
+                   throw new RuntimeException("Api Error " + res.getStatusCode());
+               })
+               .body(ChatResponse.class);
+   }
 }

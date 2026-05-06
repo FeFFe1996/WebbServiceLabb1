@@ -1,11 +1,10 @@
 package com.example.webbservicelabb1;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -21,30 +20,22 @@ public class ChatController {
 
     @GetMapping("/")
     public String chat(Model model){
-        model.addAttribute("chatMessages", chatService.sessionMessages());
-        model.addAttribute("formRequest", new ChatRequest());
+        model.addAttribute("chatMessages", chatService.allMessages());
+        FormRequest request = new FormRequest();
+
+        model.addAttribute("formRequest", request);
         return "chatpage";
     }
 
     @PostMapping("/api/v1/chat")
-    public String sendRequest(@Valid @ModelAttribute("formRequest") ChatRequest request,
+    public String sendRequest(@Valid @ModelAttribute("formRequest") FormRequest request,
                                    BindingResult bindingResult, Model model){
-        if (bindingResult.hasErrors()){
-            model.addAttribute("chatMessages", chatService.sessionMessages());
+
+        if (bindingResult.hasErrors())
             return "chatpage";
-        }
-        try {
-            if (request.getSessionId().equals(null))
-                request.setSessionId(UUID.randomUUID().toString());
-            chatService.sendMsg(request);
-        } catch (ResponseStatusException e){
-            if (e.getStatusCode() == HttpStatus.CONFLICT){
-                bindingResult.rejectValue("message", e.getStatusCode().toString(), e.getReason());
-                model.addAttribute("chatMessages", chatService.sessionMessages());
-                return "chatpage";
-            }
-            throw e;
-        }
-        return "redirect:/";
+
+        chatService.sendMessage(request);
+
+        return "chatpage";
     }
 }
