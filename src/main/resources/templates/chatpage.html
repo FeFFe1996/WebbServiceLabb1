@@ -11,7 +11,7 @@
     <main>
         <h2>call AI chat</h2>
         <div th:each="msg : ${chatMessages}">
-            <p th:text="msg.content"></p>
+            <p th:text="${msg.content}"></p>
         </div>
 
         <form th:action="@{/api/v1/chat}" th:object="${formRequest}" method="POST">

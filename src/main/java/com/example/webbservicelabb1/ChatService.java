@@ -33,6 +33,12 @@ public class ChatService {
        for (int i = 0; i < maxRetries; i++) {
            try {
                var response = getResponse(request);
+               if(response == null || response.choices() == null ||
+                       response.choices().isEmpty() ||
+                       response.choices().get(0).message() == null ||
+                       response.choices().get(0).message().content() == null){
+                   throw new IllegalStateException("Chat Api didnt return no assistant message");
+               }
                var assistantContent = response.choices().get(0).message().content();
                chatMessages.add(message);
                chatMessages.add(new ChatMessage("assistant", assistantContent));
@@ -55,6 +61,9 @@ public class ChatService {
    }
 
     private String personality(String personality) {
+        if (personality == null || personality.isBlank()) {
+            return "you are a regular chatbot, do your best";
+        }
         String description = "";
         switch (personality) {
             case "pirate" ->  description = "You are a pirate of the seven seas, a real scallywag";
