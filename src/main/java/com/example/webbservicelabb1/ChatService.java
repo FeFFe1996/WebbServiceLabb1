@@ -44,8 +44,9 @@ public class ChatService {
                chatMessages.add(new ChatMessage("assistant", assistantContent));
                return assistantContent;
            } catch (RuntimeException e) {
-               // Check if it's a 429 error and we have retries left
-               if (e.getMessage().contains("429") && i < maxRetries - 1) {
+               boolean isRateLimit = e.getMessage().contains("429");
+               boolean isServerError = e.getMessage().contains("500");
+               if ((isRateLimit || isServerError) && i < maxRetries - 1) {
                    try {
                        Thread.sleep(waitTimeMs);
                    } catch (InterruptedException ie) {
@@ -79,10 +80,18 @@ public class ChatService {
        return restClient.post()
                .uri("chat/completions")
                .contentType(MediaType.APPLICATION_JSON)
+               .header("HTTP-Referer", "https://myapp.example")
+               .header("X-Title", "WebbServiceLabb1")
                .body(chatRequest)
                .retrieve()
                .onStatus(HttpStatusCode::isError, (req, res) -> {
-                   throw new RuntimeException("Api Error " + res.getStatusCode());
+                   if (res.getStatusCode().value() == 429) {
+                       // Extract Retry-After header (value in seconds, default to 5 seconds if missing)
+                       String retryAfter = res.getHeaders().getFirst("Retry-After");
+                       long waitSeconds = retryAfter != null ? Long.parseLong(retryAfter) : 5;
+                       throw new RuntimeException("429:" + waitSeconds);
+                   }
+                   throw new RuntimeException("API Error " + res.getStatusCode());
                })
                .body(ChatResponse.class);
    }

@@ -35,7 +35,6 @@ public class ChatController {
         }
 
         chatService.sendMessage(request);
-
         return "redirect:/";
     }
 }
