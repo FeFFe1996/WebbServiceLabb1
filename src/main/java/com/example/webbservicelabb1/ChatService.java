@@ -1,33 +1,89 @@
 package com.example.webbservicelabb1;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ApiVersionInserter;
 import org.springframework.web.client.RestClient;
-
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
 
 @Service
 public class ChatService {
 
     private final RestClient restClient;
-    private List<ChatMessage> chatMessages = new ArrayList<>();
+    private final List<ChatMessage> chatMessages = new ArrayList<>();
 
-    public ChatService(RestClient.Builder restClientBuilder, @Value("${API_KEY}") String apiKey) {
-        this.restClient = restClientBuilder
-                .clone() // Creates a safe, independent copy of the builder
-                .baseUrl("https://openrouter.ai/api/v1")
-                .defaultHeader("Authorization", "Bearer " + apiKey)
-                .defaultHeader("HTTP-Referer", "https://myapp.example")
-                .defaultHeader("X-Title", "WebbServiceLabb1")
-                .build();
+    public ChatService(RestClient restClient) {
+        this.restClient = restClient;
     }
 
-    public List<ChatMessage> sessionMessages() {
+   public List<ChatMessage> allMessages(){
         return chatMessages;
+   }
+
+   public String sendMessage(FormRequest formRequest){
+        ChatMessage message = new ChatMessage("user", formRequest.getContent());
+        ChatMessage sysMsg = new ChatMessage("system", personality(formRequest.getPersonality()));
+        ChatRequest request = new ChatRequest("meta-llama/llama-3.3-70b-instruct:free", List.of(sysMsg, message));
+       int maxRetries = 3;
+       int waitTimeMs = 2000;
+
+       for (int i = 0; i < maxRetries; i++) {
+           try {
+               var response = getResponse(request);
+               if(response == null || response.choices() == null ||
+                       response.choices().isEmpty() ||
+                       response.choices().get(0).message() == null ||
+                       response.choices().get(0).message().content() == null){
+                   throw new IllegalStateException("Chat Api didnt return no assistant message");
+               }
+               var assistantContent = response.choices().get(0).message().content();
+               chatMessages.add(message);
+               chatMessages.add(new ChatMessage("assistant", assistantContent));
+               return assistantContent;
+           } catch (RuntimeException e) {
+               // Check if it's a 429 error and we have retries left
+               if (e.getMessage().contains("429") && i < maxRetries - 1) {
+                   try {
+                       Thread.sleep(waitTimeMs);
+                   } catch (InterruptedException ie) {
+                       Thread.currentThread().interrupt();
+                   }
+                   waitTimeMs *= 2;
+               } else {
+                   throw e;
+               }
+           }
+       }
+       throw new RuntimeException("Failed to get response after multiple retries due to rate limits.");
+   }
+
+    private String personality(String personality) {
+        if (personality == null || personality.isBlank()) {
+            return "you are a regular chatbot, do your best";
+        }
+        String description = "";
+        switch (personality) {
+            case "pirate" ->  description = "You are a pirate of the seven seas, a real scallywag";
+            case "salesman" -> description = "you are a top salesman of an it company that will do anything to sell your product";
+            default -> description = "you are a regular chatbot, do your best";
+        }
+
+        return description;
     }
+
+
+    public ChatResponse getResponse(ChatRequest chatRequest){
+       return restClient.post()
+               .uri("chat/completions")
+               .contentType(MediaType.APPLICATION_JSON)
+               .body(chatRequest)
+               .retrieve()
+               .onStatus(HttpStatusCode::isError, (req, res) -> {
+                   throw new RuntimeException("Api Error " + res.getStatusCode());
+               })
+               .body(ChatResponse.class);
+   }
 }

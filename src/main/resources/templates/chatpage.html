@@ -11,7 +11,7 @@
     <main>
         <h2>call AI chat</h2>
         <div th:each="msg : ${chatMessages}">
-            <p th:text="msg.message"></p>
+            <p th:text="${msg.content}"></p>
         </div>
 
         <form th:action="@{/api/v1/chat}" th:object="${formRequest}" method="POST">
@@ -25,13 +25,10 @@
             </label><br>
             <label>
                 Message
-                <input th:field="*{message}" type="text">
+                <input th:field="*{content}" type="text">
+                <span th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></span>
+                <!-- <input th:field="*{sessionId}" type="hidden"> -->
             </label><br>
-            <span th:if="*{#fields.hasErrors('message')}" th:errors="*{message}"></span>
-            <label for="sessionId">
-                SessionId
-            </label>
-            <input th:field="*{sessionId}" type="text" id="sessionId"><br>
             <input type="submit" value="submit">
         </form>
     </main>
