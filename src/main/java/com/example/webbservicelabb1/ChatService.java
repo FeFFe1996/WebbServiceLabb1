@@ -25,7 +25,7 @@ public class ChatService {
 
    public String sendMessage(FormRequest formRequest){
         ChatMessage message = new ChatMessage("user", formRequest.getContent());
-        ChatMessage sysMsg = new ChatMessage("System", personality(formRequest.getPersonality()));
+        ChatMessage sysMsg = new ChatMessage("system", personality(formRequest.getPersonality()));
         ChatRequest request = new ChatRequest("meta-llama/llama-3.3-70b-instruct:free", List.of(sysMsg, message));
        int maxRetries = 3;
        int waitTimeMs = 2000;
@@ -33,7 +33,10 @@ public class ChatService {
        for (int i = 0; i < maxRetries; i++) {
            try {
                var response = getResponse(request);
-               return response.choiceList().getFirst().message().content();
+               var assistantContent = response.choices().get(0).message().content();
+               chatMessages.add(message);
+               chatMessages.add(new ChatMessage("assistant", assistantContent));
+               return assistantContent;
            } catch (RuntimeException e) {
                // Check if it's a 429 error and we have retries left
                if (e.getMessage().contains("429") && i < maxRetries - 1) {

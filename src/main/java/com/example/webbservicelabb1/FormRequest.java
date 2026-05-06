@@ -1,5 +1,6 @@
 package com.example.webbservicelabb1;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
@@ -7,8 +8,7 @@ public class FormRequest {
 
     private String personality;
 
-    @NotEmpty
-    @NotNull
+    @NotBlank
     private String content;
 
 
@@ -30,8 +30,6 @@ public class FormRequest {
 
     @Override
     public String toString() {
-        return "FormRequest{" +
-                "content='" + content + '\'' +
-                '}';
+        return "FormRequest{}";
     }
 }

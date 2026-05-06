@@ -31,11 +31,13 @@ public class ChatController {
     public String sendRequest(@Valid @ModelAttribute("formRequest") FormRequest request,
                                    BindingResult bindingResult, Model model){
 
-        if (bindingResult.hasErrors())
+        if (bindingResult.hasErrors()){
+            model.addAttribute("formRequest", request);
             return "chatpage";
+        }
 
         chatService.sendMessage(request);
 
-        return "chatpage";
+        return "redirect:/";
     }
 }
