@@ -17,11 +17,11 @@
         <form th:action="@{/api/v1/chat}" th:object="${formRequest}" method="POST">
             <label>
                 Personality
-<!--                <select th:field="*{personality}"  name="personality">-->
-<!--                    <option value="chatbot">chatbot</option>-->
-<!--                    <option value="pirate">pirate</option>-->
-<!--                    <option value="salesman">salesman</option>-->
-<!--                </select>-->
+                <select th:field="*{personality}"  name="personality">
+                    <option value="chatbot">chatbot</option>
+                    <option value="pirate">pirate</option>
+                    <option value="salesman">salesman</option>
+                </select>
             </label><br>
             <label>
                 Message

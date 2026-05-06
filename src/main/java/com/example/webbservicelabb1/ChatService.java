@@ -25,7 +25,8 @@ public class ChatService {
 
    public String sendMessage(FormRequest formRequest){
         ChatMessage message = new ChatMessage("user", formRequest.getContent());
-        ChatRequest request = new ChatRequest("meta-llama/llama-3.3-70b-instruct:free", List.of(message));
+        ChatMessage sysMsg = new ChatMessage("System", personality(formRequest.getPersonality()));
+        ChatRequest request = new ChatRequest("meta-llama/llama-3.3-70b-instruct:free", List.of(sysMsg, message));
        int maxRetries = 3;
        int waitTimeMs = 2000;
 
@@ -50,8 +51,19 @@ public class ChatService {
        throw new RuntimeException("Failed to get response after multiple retries due to rate limits.");
    }
 
+    private String personality(String personality) {
+        String description = "";
+        switch (personality) {
+            case "pirate" ->  description = "You are a pirate of the seven seas, a real scallywag";
+            case "salesman" -> description = "you are a top salesman of an it company that will do anything to sell your product";
+            default -> description = "you are a regular chatbot, do your best";
+        }
 
-   public ChatResponse getResponse(ChatRequest chatRequest){
+        return description;
+    }
+
+
+    public ChatResponse getResponse(ChatRequest chatRequest){
        return restClient.post()
                .uri("chat/completions")
                .contentType(MediaType.APPLICATION_JSON)

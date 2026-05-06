@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 
 public class FormRequest {
 
+    private String personality;
+
     @NotEmpty
     @NotNull
     private String content;
@@ -16,6 +18,14 @@ public class FormRequest {
 
     public void setContent(String message) {
         this.content = message;
+    }
+
+    public String getPersonality() {
+        return personality;
+    }
+
+    public void setPersonality(String personality) {
+        this.personality = personality;
     }
 
     @Override
