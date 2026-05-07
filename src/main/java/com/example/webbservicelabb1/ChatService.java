@@ -45,13 +45,21 @@ public class ChatService {
                return assistantContent;
            } catch (RuntimeException e) {
                String errorMessage= e.getMessage();
-               boolean isRateLimit = message != null && errorMessage.startsWith("429:");
-               boolean isServerError = message != null && errorMessage.contains("500");
+               boolean isRateLimit = errorMessage != null && errorMessage.startsWith("429:");
+               boolean isServerError = errorMessage != null && errorMessage.contains("500");
                if ((isRateLimit || isServerError) && i < maxRetries - 1) {
                    try {
-                       Long sleepMs = isRateLimit ? Long.parseLong(errorMessage.substring(4)) * 1000L : waitTimeMs;
+                       long sleepMs = waitTimeMs;
+                       if (isRateLimit) {
+                           try {
+                               long retryAfterSeconds = Long.parseLong(errorMessage.substring(4).trim());
+                               sleepMs = Math.max(0L, retryAfterSeconds) * 1000L;
+                               } catch (NumberFormatException ignored) {
+                               sleepMs = waitTimeMs;
+                               }
+                           }
                        Thread.sleep(sleepMs);
-                   } catch (InterruptedException ie) {
+                       } catch (InterruptedException ie) {
                        Thread.currentThread().interrupt();
                    }
                    waitTimeMs *= 2;
@@ -60,7 +68,7 @@ public class ChatService {
                }
            }
        }
-       throw new RuntimeException("Failed to get response after multiple retries due to rate limits.");
+       throw new RuntimeException("Failed to get response after multiple retries.");
    }
 
     private String personality(String personality) {
