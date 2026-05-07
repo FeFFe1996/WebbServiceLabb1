@@ -44,11 +44,13 @@ public class ChatService {
                chatMessages.add(new ChatMessage("assistant", assistantContent));
                return assistantContent;
            } catch (RuntimeException e) {
-               boolean isRateLimit = e.getMessage().contains("429");
-               boolean isServerError = e.getMessage().contains("500");
+               String errorMessage= e.getMessage();
+               boolean isRateLimit = message != null && errorMessage.startsWith("429:");
+               boolean isServerError = message != null && errorMessage.contains("500");
                if ((isRateLimit || isServerError) && i < maxRetries - 1) {
                    try {
-                       Thread.sleep(waitTimeMs);
+                       Long sleepMs = isRateLimit ? Long.parseLong(errorMessage.substring(4)) * 1000L : waitTimeMs;
+                       Thread.sleep(sleepMs);
                    } catch (InterruptedException ie) {
                        Thread.currentThread().interrupt();
                    }
@@ -86,9 +88,15 @@ public class ChatService {
                .retrieve()
                .onStatus(HttpStatusCode::isError, (req, res) -> {
                    if (res.getStatusCode().value() == 429) {
-                       // Extract Retry-After header (value in seconds, default to 5 seconds if missing)
                        String retryAfter = res.getHeaders().getFirst("Retry-After");
-                       long waitSeconds = retryAfter != null ? Long.parseLong(retryAfter) : 5;
+                       long waitSeconds = 5;
+                       if (retryAfter != null){
+                           try {
+                               waitSeconds = Long.parseLong(retryAfter.trim());
+                           } catch (NumberFormatException ignored){
+                               waitSeconds = 5;
+                           }
+                       }
                        throw new RuntimeException("429:" + waitSeconds);
                    }
                    throw new RuntimeException("API Error " + res.getStatusCode());
