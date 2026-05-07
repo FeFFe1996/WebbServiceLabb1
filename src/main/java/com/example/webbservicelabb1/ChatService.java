@@ -1,5 +1,7 @@
 package com.example.webbservicelabb1;
 
+import com.example.webbservicelabb1.exception.ApiException;
+import com.example.webbservicelabb1.exception.RateLimitExceededException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -11,7 +13,7 @@ import java.util.List;
 
 @Service
 public class ChatService {
-
+    private static final long MAX_RETRY_SLEEP_MS = 10_000L;
     private final RestClient restClient;
     private final List<ChatMessage> chatMessages = new ArrayList<>();
 
@@ -33,32 +35,50 @@ public class ChatService {
        for (int i = 0; i < maxRetries; i++) {
            try {
                var response = getResponse(request);
-               if(response == null || response.choices() == null ||
-                       response.choices().isEmpty() ||
+
+               if (response == null || response.choices() == null || response.choices().isEmpty() ||
                        response.choices().get(0).message() == null ||
-                       response.choices().get(0).message().content() == null){
-                   throw new IllegalStateException("Chat Api didnt return no assistant message");
+                       response.choices().get(0).message().content() == null) {
+                   throw new IllegalStateException("Chat API didn't return an assistant message");
                }
+
                var assistantContent = response.choices().get(0).message().content();
                chatMessages.add(message);
                chatMessages.add(new ChatMessage("assistant", assistantContent));
                return assistantContent;
-           } catch (RuntimeException e) {
-               // Check if it's a 429 error and we have retries left
-               if (e.getMessage().contains("429") && i < maxRetries - 1) {
-                   try {
-                       Thread.sleep(waitTimeMs);
-                   } catch (InterruptedException ie) {
-                       Thread.currentThread().interrupt();
-                   }
+
+           } catch (RateLimitExceededException e) {
+
+               handleRetry(i, maxRetries, e.getWaitSeconds() * 1000L, e);
+               waitTimeMs *= 2;
+           } catch (ApiException e) {
+               if (isTransientError(e.getStatusCode())) {
+                   handleRetry(i, maxRetries, waitTimeMs, e);
                    waitTimeMs *= 2;
                } else {
+
                    throw e;
                }
            }
        }
-       throw new RuntimeException("Failed to get response after multiple retries due to rate limits.");
+       throw new ApiException(503, "Failed to get response after " + maxRetries + " retries.");
    }
+
+    private boolean isTransientError(int statusCode) {
+        return statusCode == 502 || statusCode == 503 || statusCode == 504;
+    }
+
+    private void handleRetry(int currentAttempt, int maxRetries, long sleepMs, RuntimeException originalException) {
+        if (currentAttempt >= maxRetries - 1) {
+            throw originalException;
+        }
+        try {
+            Thread.sleep(Math.clamp(sleepMs, 0L, MAX_RETRY_SLEEP_MS));
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Retry interrupted", ie);
+        }
+    }
 
     private String personality(String personality) {
         if (personality == null || personality.isBlank()) {
@@ -79,10 +99,24 @@ public class ChatService {
        return restClient.post()
                .uri("chat/completions")
                .contentType(MediaType.APPLICATION_JSON)
+               .header("HTTP-Referer", "https://myapp.example")
+               .header("X-Title", "WebbServiceLabb1")
                .body(chatRequest)
                .retrieve()
                .onStatus(HttpStatusCode::isError, (req, res) -> {
-                   throw new RuntimeException("Api Error " + res.getStatusCode());
+                   int status = res.getStatusCode().value();
+                   if (status == 429) {
+                       String retryAfter = res.getHeaders().getFirst("Retry-After");
+                       long waitSeconds = 5;
+                       if (retryAfter != null){
+                           try {
+                               waitSeconds = Math.max(0L, Long.parseLong(retryAfter.trim()));
+                           } catch (NumberFormatException ignored){
+                           }
+                       }
+                       throw new RateLimitExceededException(waitSeconds, "Rate limit exceeded");
+                   }
+                   throw new ApiException(status, "API Error: " + res.getStatusText());
                })
                .body(ChatResponse.class);
    }
