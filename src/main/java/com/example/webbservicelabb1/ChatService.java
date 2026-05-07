@@ -28,8 +28,8 @@ public class ChatService {
    public String sendMessage(FormRequest formRequest){
         ChatMessage message = new ChatMessage("user", formRequest.getContent());
         ChatMessage sysMsg = new ChatMessage("system", personality(formRequest.getPersonality()));
-        ChatRequest request = new ChatRequest("meta-llama/llama-3.3-70b-instruct:free", List.of(sysMsg, message));
-       int maxRetries = 3;
+        ChatRequest request = new ChatRequest("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", List.of(sysMsg, message));
+       int maxRetries = 5;
        int waitTimeMs = 2000;
 
        for (int i = 0; i < maxRetries; i++) {
@@ -48,8 +48,8 @@ public class ChatService {
                return assistantContent;
 
            } catch (RateLimitExceededException e) {
-
-               handleRetry(i, maxRetries, e.getWaitSeconds() * 1000L, e);
+               long sleep = (e.getWaitSeconds() > 0) ? e.getWaitSeconds() * 1000L : waitTimeMs;
+               handleRetry(i, maxRetries, sleep, e);
                waitTimeMs *= 2;
            } catch (ApiException e) {
                if (isTransientError(e.getStatusCode())) {
@@ -104,6 +104,8 @@ public class ChatService {
                .body(chatRequest)
                .retrieve()
                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                   String body = new String(res.getBody().readAllBytes());
+                   System.out.println("error: " + body);
                    int status = res.getStatusCode().value();
                    if (status == 429) {
                        String retryAfter = res.getHeaders().getFirst("Retry-After");
