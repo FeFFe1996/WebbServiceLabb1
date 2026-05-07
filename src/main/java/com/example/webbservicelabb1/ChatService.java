@@ -13,7 +13,7 @@ import java.util.List;
 
 @Service
 public class ChatService {
-
+    private static final long MAX_RETRY_SLEEP_MS = 10_000L;
     private final RestClient restClient;
     private final List<ChatMessage> chatMessages = new ArrayList<>();
 
@@ -50,7 +50,7 @@ public class ChatService {
            } catch (RateLimitExceededException e) {
 
                handleRetry(i, maxRetries, e.getWaitSeconds() * 1000L, e);
-               waitTimeMs *= 2; // Keep track of backoff if needed for next loop
+               waitTimeMs *= 2;
            } catch (ApiException e) {
                if (isTransientError(e.getStatusCode())) {
                    handleRetry(i, maxRetries, waitTimeMs, e);
@@ -73,7 +73,7 @@ public class ChatService {
             throw originalException;
         }
         try {
-            Thread.sleep(sleepMs);
+            Thread.sleep(Math.clamp(sleepMs, 0L, MAX_RETRY_SLEEP_MS));
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Retry interrupted", ie);
@@ -110,9 +110,8 @@ public class ChatService {
                        long waitSeconds = 5;
                        if (retryAfter != null){
                            try {
-                               waitSeconds = Long.parseLong(retryAfter.trim());
+                               waitSeconds = Math.max(0L, Long.parseLong(retryAfter.trim()));
                            } catch (NumberFormatException ignored){
-                               waitSeconds = 5;
                            }
                        }
                        throw new RateLimitExceededException(waitSeconds, "Rate limit exceeded");

@@ -11,6 +11,7 @@
     <main>
         <h2>call AI chat</h2>
         <div th:each="msg : ${chatMessages}">
+            <h3 th:text="${msg.role}"></h3>
             <p th:text="${msg.content}"></p>
         </div>
 
