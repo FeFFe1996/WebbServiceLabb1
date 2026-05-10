@@ -21,7 +21,6 @@ class ChatServiceTest {
 
     @BeforeEach
     void setUp(WireMockRuntimeInfo wmRuntimeInfo) {
-        // Force HTTP/1.1 to avoid RST_STREAM issues
         HttpClient httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .build();
@@ -29,7 +28,7 @@ class ChatServiceTest {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
 
         RestClient restClient = RestClient.builder()
-                .requestFactory(factory) // Attach the factory here
+                .requestFactory(factory)
                 .baseUrl(wmRuntimeInfo.getHttpBaseUrl())
                 .build();
 
@@ -84,7 +83,7 @@ class ChatServiceTest {
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willReturn(status(429)
                         .withHeader("Content-Type", "application/json")
-                        .withHeader("Retry-After", "1") // Your code parses this
+                        .withHeader("Retry-After", "1")
                         .withBody("{\"error\": \"Rate limit exceeded\"}"))
                 .willSetStateTo("SucceedOnRetry"));
 
