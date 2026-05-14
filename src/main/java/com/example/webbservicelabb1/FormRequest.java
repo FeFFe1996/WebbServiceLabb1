@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 
 public class FormRequest {
 
+    public FormRequest(){}
+
     private String personality;
 
     @NotBlank

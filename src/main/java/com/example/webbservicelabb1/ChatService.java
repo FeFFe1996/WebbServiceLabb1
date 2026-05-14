@@ -2,6 +2,9 @@ package com.example.webbservicelabb1;
 
 import com.example.webbservicelabb1.exception.ApiException;
 import com.example.webbservicelabb1.exception.RateLimitExceededException;
+import com.example.webbservicelabb1.model.ChatMessage;
+import com.example.webbservicelabb1.model.ChatRequest;
+import com.example.webbservicelabb1.model.ChatResponse;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;

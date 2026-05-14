@@ -4,6 +4,37 @@
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const chatForm = document.querySelector('form'); // Adjust selector if you have multiple forms
+
+        chatForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(chatForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    window.location.href = "/";
+                } else {
+                    const errorData = await response.json();
+                    console.error("Validation failed:", errorData);
+                    alert("Please check your input and try again.");
+                }
+            } catch (error) {
+                console.error("Network error:", error);
+            }
+        });
+    });
+</script>
 <body>
     <header>
         <h1>form page</h1>
@@ -28,7 +59,6 @@
                 Message
                 <input th:field="*{content}" type="text">
                 <span th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></span>
-                <!-- <input th:field="*{sessionId}" type="hidden"> -->
             </label><br>
             <input type="submit" value="submit">
         </form>

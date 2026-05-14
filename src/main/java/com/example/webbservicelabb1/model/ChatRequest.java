@@ -1,4 +1,4 @@
-package com.example.webbservicelabb1;
+package com.example.webbservicelabb1.model;
 
 
 import java.util.List;
